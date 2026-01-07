@@ -1,5 +1,5 @@
 --[[
-    HYPER TITAN: RAYFIELD EDITION
+    HYPER TITAN: Rhhhh EDITION
     "The Cleanest & Most Powerful Mobile Hub"
     
     > UI Library: Rayfield Interface Suite
