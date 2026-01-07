@@ -1,308 +1,365 @@
---[[
-    HYPER TITAN: Rhhhh EDITION
-    "The Cleanest & Most Powerful Mobile Hub"
+    --[[
+    HYPER TITAN: CUSTOM TAB ENGINE
+    "The 100% Original Interface"
     
-    > UI Library: Rayfield Interface Suite
-    > Core: Titan Kernel V9
-    > Features: Skeleton ESP, Silent Aim, Fly, Speed
+    > No External Libraries (No Rayfield/Orion)
+    > Zero Watermarks
+    > Custom Tab System
 ]]
 
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
 local CoreGui = game:GetService("CoreGui")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
 local Lighting = game:GetService("Lighting")
 
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
 -- =================================================================
--- 1. CUSTOM KEY SYSTEM (Fixed "Get Link")
+-- 1. CONFIG & THEME
 -- =================================================================
-local KeyConfig = {
+local Settings = {
     Key = "FREE_e7cc843f9dc7f5018d4effe177204c7e",
     Link = "https://link-target.net/1448934/woiFzcBpdM12",
-    FileName = "HyperTitan_Rayfield_Key.txt"
+    Theme = {
+        Background = Color3.fromRGB(20, 20, 20),
+        Sidebar = Color3.fromRGB(30, 30, 30),
+        Accent = Color3.fromRGB(0, 255, 140), -- Hyper Green
+        Text = Color3.fromRGB(255, 255, 255),
+        TextDark = Color3.fromRGB(150, 150, 150),
+        Item = Color3.fromRGB(35, 35, 35)
+    }
 }
 
-local function RunKeySystem()
-    -- Check Memory
-    if isfile(KeyConfig.FileName) and readfile(KeyConfig.FileName) == KeyConfig.Key then return end
+-- =================================================================
+-- 2. CUSTOM UI ENGINE (THE "TITAN" LIBRARY)
+-- =================================================================
+local Library = {}
+local UI = Instance.new("ScreenGui")
+UI.Name = "HyperTitan_Custom"
+UI.IgnoreGuiInset = true
+if pcall(function() UI.Parent = CoreGui end) then UI.Parent = CoreGui else UI.Parent = LocalPlayer.PlayerGui end
 
-    local ScreenGui = Instance.new("ScreenGui")
-    ScreenGui.IgnoreGuiInset = true
-    if pcall(function() ScreenGui.Parent = CoreGui end) then ScreenGui.Parent = CoreGui else ScreenGui.Parent = LocalPlayer.PlayerGui end
-
-    local Main = Instance.new("Frame", ScreenGui)
-    Main.Size = UDim2.new(0, 350, 0, 220)
-    Main.Position = UDim2.new(0.5, 0, 0.5, 0)
-    Main.AnchorPoint = Vector2.new(0.5, 0.5)
-    Main.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-    Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 10)
-
-    local Title = Instance.new("TextLabel", Main)
-    Title.Text = "HYPER TITAN LOCKED"
-    Title.Font = Enum.Font.GothamBlack
-    Title.TextSize = 24
-    Title.TextColor3 = Color3.fromRGB(0, 255, 140)
-    Title.Size = UDim2.new(1, 0, 0.3, 0)
-    Title.BackgroundTransparency = 1
-
-    local Input = Instance.new("TextBox", Main)
-    Input.Size = UDim2.new(0.8, 0, 0.2, 0)
-    Input.Position = UDim2.new(0.1, 0, 0.3, 0)
-    Input.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    Input.TextColor3 = Color3.new(1,1,1)
-    Input.PlaceholderText = "Paste Key Here..."
-    Input.TextSize = 16
-    Instance.new("UICorner", Input).CornerRadius = UDim.new(0, 8)
-
-    local Enter = Instance.new("TextButton", Main)
-    Enter.Size = UDim2.new(0.4, 0, 0.2, 0)
-    Enter.Position = UDim2.new(0.5, 5, 0.6, 0)
-    Enter.BackgroundColor3 = Color3.fromRGB(0, 255, 140)
-    Enter.Text = "LOGIN"
-    Enter.Font = Enum.Font.GothamBold
-    Enter.TextSize = 16
-    Instance.new("UICorner", Enter).CornerRadius = UDim.new(0, 8)
-
-    local LinkBtn = Instance.new("TextButton", Main)
-    LinkBtn.Size = UDim2.new(0.4, 0, 0.2, 0)
-    LinkBtn.Position = UDim2.new(0.1, -5, 0.6, 0)
-    LinkBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-    LinkBtn.Text = "GET LINK"
-    LinkBtn.TextColor3 = Color3.new(1,1,1)
-    LinkBtn.Font = Enum.Font.GothamBold
-    LinkBtn.TextSize = 16
-    Instance.new("UICorner", LinkBtn).CornerRadius = UDim.new(0, 8)
-
-    LinkBtn.MouseButton1Click:Connect(function()
-        setclipboard(KeyConfig.Link)
-        LinkBtn.Text = "COPIED!"
-        task.wait(1)
-        LinkBtn.Text = "GET LINK"
-    end)
-
-    local Verified = false
-    Enter.MouseButton1Click:Connect(function()
-        if Input.Text == KeyConfig.Key then
-            writefile(KeyConfig.FileName, KeyConfig.Key)
-            Verified = true
-            ScreenGui:Destroy()
-        else
-            Enter.Text = "INVALID"
-            Enter.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
-            task.wait(1)
-            Enter.Text = "LOGIN"
-            Enter.BackgroundColor3 = Color3.fromRGB(0, 255, 140)
+-- Drag Function
+local function MakeDraggable(obj)
+    local dragging, dragInput, dragStart, startPos
+    obj.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true; dragStart = input.Position; startPos = obj.Position
+            input.Changed:Connect(function() if input.UserInputState == Enum.UserInputState.End then dragging = false end end)
         end
     end)
-    repeat task.wait() until Verified
+    obj.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then dragInput = input end
+    end)
+    UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            local delta = input.Position - dragStart
+            TweenService:Create(obj, TweenInfo.new(0.05), {Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)}):Play()
+        end
+    end)
 end
-RunKeySystem()
+
+function Library:Init()
+    -- Main Window
+    local Main = Instance.new("Frame", UI)
+    Main.Name = "MainFrame"
+    Main.Size = UDim2.new(0, 550, 0, 350)
+    Main.Position = UDim2.new(0.5, -275, 0.5, -175)
+    Main.BackgroundColor3 = Settings.Theme.Background
+    Main.BorderSizePixel = 0
+    Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 6)
+    MakeDraggable(Main)
+
+    -- Sidebar (Left)
+    local Sidebar = Instance.new("Frame", Main)
+    Sidebar.Size = UDim2.new(0, 140, 1, 0)
+    Sidebar.BackgroundColor3 = Settings.Theme.Sidebar
+    Sidebar.BorderSizePixel = 0
+    Instance.new("UICorner", Sidebar).CornerRadius = UDim.new(0, 6)
+    
+    -- Fix Corner (Make right side flat)
+    local Fix = Instance.new("Frame", Sidebar)
+    Fix.Size = UDim2.new(0, 10, 1, 0)
+    Fix.Position = UDim2.new(1, -10, 0, 0)
+    Fix.BackgroundColor3 = Settings.Theme.Sidebar
+    Fix.BorderSizePixel = 0
+
+    -- Title
+    local Title = Instance.new("TextLabel", Sidebar)
+    Title.Text = "HYPER\nTITAN"
+    Title.Font = Enum.Font.GothamBlack
+    Title.TextSize = 24
+    Title.TextColor3 = Settings.Theme.Accent
+    Title.Size = UDim2.new(1, 0, 0, 80)
+    Title.BackgroundTransparency = 1
+    
+    -- Container (Right)
+    local Container = Instance.new("Frame", Main)
+    Container.Size = UDim2.new(1, -150, 1, -20)
+    Container.Position = UDim2.new(0, 150, 0, 10)
+    Container.BackgroundTransparency = 1
+
+    local TabList = Instance.new("UIListLayout", Sidebar)
+    TabList.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    TabList.SortOrder = Enum.SortOrder.LayoutOrder
+    TabList.Padding = UDim.new(0, 5)
+    
+    -- Padding for Title
+    local Pad = Instance.new("UIPadding", Sidebar)
+    Pad.PaddingTop = UDim.new(0, 80)
+
+    local Tabs = {}
+    local FirstTab = true
+
+    function Library:CreateTab(Name)
+        -- Tab Button
+        local TabBtn = Instance.new("TextButton", Sidebar)
+        TabBtn.Size = UDim2.new(0.9, 0, 0, 35)
+        TabBtn.BackgroundColor3 = Settings.Theme.Background
+        TabBtn.Text = Name
+        TabBtn.TextColor3 = Settings.Theme.TextDark
+        TabBtn.Font = Enum.Font.GothamBold
+        TabBtn.TextSize = 14
+        Instance.new("UICorner", TabBtn).CornerRadius = UDim.new(0, 6)
+
+        -- Page Frame
+        local Page = Instance.new("ScrollingFrame", Container)
+        Page.Size = UDim2.new(1, 0, 1, 0)
+        Page.BackgroundTransparency = 1
+        Page.ScrollBarThickness = 2
+        Page.Visible = false
+        
+        local PageLayout = Instance.new("UIListLayout", Page)
+        PageLayout.SortOrder = Enum.SortOrder.LayoutOrder
+        PageLayout.Padding = UDim.new(0, 8)
+        
+        -- Switch Logic
+        TabBtn.MouseButton1Click:Connect(function()
+            for _, t in pairs(Tabs) do
+                t.Page.Visible = false
+                t.Btn.BackgroundColor3 = Settings.Theme.Background
+                t.Btn.TextColor3 = Settings.Theme.TextDark
+            end
+            Page.Visible = true
+            TabBtn.BackgroundColor3 = Settings.Theme.Accent
+            TabBtn.TextColor3 = Color3.new(0,0,0)
+        end)
+
+        if FirstTab then
+            Page.Visible = true
+            TabBtn.BackgroundColor3 = Settings.Theme.Accent
+            TabBtn.TextColor3 = Color3.new(0,0,0)
+            FirstTab = false
+        end
+
+        table.insert(Tabs, {Page = Page, Btn = TabBtn})
+        
+        local Elements = {}
+        
+        function Elements:CreateToggle(Text, Default, Callback)
+            local Toggled = Default or false
+            local Frame = Instance.new("Frame", Page)
+            Frame.Size = UDim2.new(1, -10, 0, 40)
+            Frame.BackgroundColor3 = Settings.Theme.Item
+            Instance.new("UICorner", Frame).CornerRadius = UDim.new(0, 6)
+            
+            local Label = Instance.new("TextLabel", Frame)
+            Label.Size = UDim2.new(0.7, 0, 1, 0)
+            Label.Position = UDim2.new(0, 15, 0, 0)
+            Label.BackgroundTransparency = 1
+            Label.Text = Text
+            Label.TextColor3 = Settings.Theme.Text
+            Label.Font = Enum.Font.GothamSemiBold
+            Label.TextSize = 14
+            Label.TextXAlignment = Enum.TextXAlignment.Left
+            
+            local Btn = Instance.new("TextButton", Frame)
+            Btn.Size = UDim2.new(0, 40, 0, 20)
+            Btn.Position = UDim2.new(1, -50, 0.5, -10)
+            Btn.BackgroundColor3 = Toggled and Settings.Theme.Accent or Color3.fromRGB(60,60,60)
+            Btn.Text = ""
+            Instance.new("UICorner", Btn).CornerRadius = UDim.new(1, 0)
+            
+            Btn.MouseButton1Click:Connect(function()
+                Toggled = not Toggled
+                TweenService:Create(Btn, TweenInfo.new(0.2), {BackgroundColor3 = Toggled and Settings.Theme.Accent or Color3.fromRGB(60,60,60)}):Play()
+                Callback(Toggled)
+            end)
+            if Default then Callback(true) end
+        end
+        
+        function Elements:CreateSlider(Text, Min, Max, Default, Callback)
+            local Value = Default or Min
+            local Frame = Instance.new("Frame", Page)
+            Frame.Size = UDim2.new(1, -10, 0, 50)
+            Frame.BackgroundColor3 = Settings.Theme.Item
+            Instance.new("UICorner", Frame).CornerRadius = UDim.new(0, 6)
+            
+            local Label = Instance.new("TextLabel", Frame)
+            Label.Text = Text
+            Label.Size = UDim2.new(1, -15, 0, 25)
+            Label.Position = UDim2.new(0, 15, 0, 0)
+            Label.BackgroundTransparency = 1
+            Label.TextColor3 = Settings.Theme.Text
+            Label.Font = Enum.Font.GothamSemiBold
+            Label.TextSize = 14
+            Label.TextXAlignment = Enum.TextXAlignment.Left
+            
+            local ValLbl = Instance.new("TextLabel", Frame)
+            ValLbl.Text = tostring(Value)
+            ValLbl.Size = UDim2.new(1, -15, 0, 25)
+            ValLbl.BackgroundTransparency = 1
+            ValLbl.TextColor3 = Settings.Theme.TextDark
+            ValLbl.Font = Enum.Font.Code
+            ValLbl.TextSize = 13
+            ValLbl.TextXAlignment = Enum.TextXAlignment.Right
+            
+            local BarBG = Instance.new("Frame", Frame)
+            BarBG.Size = UDim2.new(0.9, 0, 0, 4)
+            BarBG.Position = UDim2.new(0.05, 0, 0.75, 0)
+            BarBG.BackgroundColor3 = Color3.fromRGB(60,60,60)
+            
+            local BarFill = Instance.new("Frame", BarBG)
+            BarFill.Size = UDim2.new((Value-Min)/(Max-Min), 0, 1, 0)
+            BarFill.BackgroundColor3 = Settings.Theme.Accent
+            
+            local Trigger = Instance.new("TextButton", Frame)
+            Trigger.Size = UDim2.new(1,0,1,0); Trigger.BackgroundTransparency = 1; Trigger.Text = ""
+            
+            local Dragging = false
+            local function Update(i)
+                local P = math.clamp((i.Position.X - BarBG.AbsolutePosition.X) / BarBG.AbsoluteSize.X, 0, 1)
+                Value = math.floor(Min + ((Max-Min)*P))
+                ValLbl.Text = tostring(Value)
+                BarFill.Size = UDim2.new(P, 0, 1, 0)
+                Callback(Value)
+            end
+            Trigger.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then Dragging = true; Update(i) end end)
+            UserInputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then Dragging = false end end)
+            UserInputService.InputChanged:Connect(function(i) if Dragging and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then Update(i) end end)
+        end
+        
+        function Elements:CreateButton(Text, Callback)
+            local Btn = Instance.new("TextButton", Page)
+            Btn.Size = UDim2.new(1, -10, 0, 40)
+            Btn.BackgroundColor3 = Settings.Theme.Item
+            Btn.Text = Text
+            Btn.TextColor3 = Settings.Theme.Text
+            Btn.Font = Enum.Font.GothamBold
+            Btn.TextSize = 14
+            Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 6)
+            
+            Btn.MouseButton1Click:Connect(function()
+                TweenService:Create(Btn, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(60,60,60)}):Play()
+                task.wait(0.1)
+                TweenService:Create(Btn, TweenInfo.new(0.1), {BackgroundColor3 = Settings.Theme.Item}):Play()
+                Callback()
+            end)
+        end
+
+        return Elements
+    end
+    return Library
+end
 
 -- =================================================================
--- 2. RAYFIELD UI LIBRARY
+-- 3. SETUP & FEATURES
 -- =================================================================
-local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+Library:Init()
 
-local Window = Rayfield:CreateWindow({
-    Name = "Hyper Titan [Rayfield]",
-    LoadingTitle = "Hyper Hub",
-    LoadingSubtitle = "Titan Engine V9",
-    ConfigurationSaving = {
-        Enabled = true,
-        FolderName = "HyperTitanConfig",
-        FileName = "Config"
-    },
-    Discord = {
-        Enabled = false,
-        Invite = "",
-        RememberJoins = true
-    },
-    KeySystem = false -- We used our custom one above
-})
+local Combat = Library:CreateTab("Combat")
+local Visuals = Library:CreateTab("Visuals")
+local Move = Library:CreateTab("Movement")
+local Scripts = Library:CreateTab("Scripts")
 
--- =================================================================
--- 3. TABS & FEATURES
--- =================================================================
+-- [ COMBAT ]
+Combat:CreateToggle("Aimbot", false, function(v)
+    getgenv().Aimbot = v
+    RunService.RenderStepped:Connect(function()
+        if getgenv().Aimbot then
+            local Mouse = UserInputService:GetMouseLocation()
+            local Closest, Dist = nil, 150
+            for _, p in pairs(Players:GetPlayers()) do
+                if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("Head") then
+                    local Pos, Vis = Camera:WorldToViewportPoint(p.Character.Head.Position)
+                    if Vis then
+                        local Mag = (Vector2.new(Pos.X, Pos.Y) - Mouse).Magnitude
+                        if Mag < Dist then Closest = p.Character.Head; Dist = Mag end
+                    end
+                end
+            end
+            if Closest then Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, Closest.Position), 0.5) end
+        end
+    end)
+end)
 
--- [ VARIABLES ]
-local State = {
-    Aimbot = false, FOV = 150, Smooth = 0.5,
-    Fly = false, FlySpeed = 20,
-    ESP = false, Skeletons = false,
-    Walk = 16, Jump = 50
-}
-
--- [ TAB: COMBAT ]
-local CombatTab = Window:CreateTab("Combat", 4483362458) -- Sword Icon
-
-CombatTab:CreateToggle({
-    Name = "Aimbot Enabled",
-    CurrentValue = false,
-    Callback = function(Value)
-        State.Aimbot = Value
-        RunService.RenderStepped:Connect(function()
-            if State.Aimbot then
-                local Mouse = UserInputService:GetMouseLocation()
-                local Closest = nil
-                local MinDist = State.FOV
-                
+Combat:CreateToggle("Kill Aura", false, function(v)
+    getgenv().Aura = v
+    task.spawn(function()
+        while getgenv().Aura do
+            pcall(function()
                 for _, p in pairs(Players:GetPlayers()) do
-                    if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("Head") then
-                        local Pos, Vis = Camera:WorldToViewportPoint(p.Character.Head.Position)
-                        if Vis then
-                            local Dist = (Vector2.new(Pos.X, Pos.Y) - Mouse).Magnitude
-                            if Dist < MinDist then
-                                Closest = p.Character.Head
-                                MinDist = Dist
-                            end
+                    if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                        if (LocalPlayer.Character.HumanoidRootPart.Position - p.Character.HumanoidRootPart.Position).Magnitude < 20 then
+                            LocalPlayer.Character:FindFirstChildOfClass("Tool"):Activate()
                         end
                     end
                 end
-                
-                if Closest then
-                    local TargetCF = CFrame.new(Camera.CFrame.Position, Closest.Position)
-                    Camera.CFrame = Camera.CFrame:Lerp(TargetCF, State.Smooth)
-                end
-            end
-        end)
-    end,
-})
+            end)
+            task.wait(0.1)
+        end
+    end)
+end)
 
-CombatTab:CreateSlider({
-    Name = "Aimbot FOV",
-    Range = {10, 500},
-    Increment = 10,
-    CurrentValue = 150,
-    Callback = function(Value) State.FOV = Value end,
-})
-
-CombatTab:CreateSlider({
-    Name = "Smoothness",
-    Range = {0, 1},
-    Increment = 0.1,
-    CurrentValue = 0.5,
-    Callback = function(Value) State.Smooth = Value end,
-})
-
--- [ TAB: VISUALS ]
-local VisualsTab = Window:CreateTab("Visuals", 4483362458) -- Eye Icon
-
-VisualsTab:CreateToggle({
-    Name = "Master ESP (Highlight)",
-    CurrentValue = false,
-    Callback = function(Value)
-        State.ESP = Value
+-- [ VISUALS ]
+Visuals:CreateToggle("ESP (Chams)", false, function(v)
+    getgenv().ESP = v
+    if v then
         task.spawn(function()
-            while State.ESP do
+            while getgenv().ESP do
                 for _, p in pairs(Players:GetPlayers()) do
-                    if p ~= LocalPlayer and p.Character and not p.Character:FindFirstChild("HyperESP") then
+                    if p ~= LocalPlayer and p.Character and not p.Character:FindFirstChild("ESP") then
                         local h = Instance.new("Highlight", p.Character)
-                        h.Name = "HyperESP"
-                        h.FillColor = Color3.fromRGB(0, 255, 140)
+                        h.Name = "ESP"
+                        h.FillColor = Settings.Theme.Accent
                         h.OutlineColor = Color3.new(1,1,1)
                     end
                 end
                 task.wait(1)
             end
-            -- Clear if turned off
-            if not State.ESP then
-                for _, p in pairs(Players:GetPlayers()) do
-                    if p.Character and p.Character:FindFirstChild("HyperESP") then
-                        p.Character.HyperESP:Destroy()
-                    end
-                end
-            end
         end)
-    end,
-})
-
-VisualsTab:CreateToggle({
-    Name = "Fullbright",
-    CurrentValue = false,
-    Callback = function(Value)
-        if Value then
-            Lighting.Brightness = 2
-            Lighting.ClockTime = 14
-        else
-            Lighting.Brightness = 1
+    else
+        for _, p in pairs(Players:GetPlayers()) do
+            if p.Character and p.Character:FindFirstChild("ESP") then p.Character.ESP:Destroy() end
         end
-    end,
-})
+    end
+end)
 
--- [ TAB: MOVEMENT ]
-local MoveTab = Window:CreateTab("Movement", 4483362458) -- Run Icon
+-- [ MOVEMENT ]
+Move:CreateSlider("Speed", 16, 200, 16, function(v)
+    if LocalPlayer.Character then LocalPlayer.Character.Humanoid.WalkSpeed = v end
+end)
 
-MoveTab:CreateToggle({
-    Name = "Fly (CFrame)",
-    CurrentValue = false,
-    Callback = function(Value)
-        State.Fly = Value
-        if Value then
-            local Root = LocalPlayer.Character.HumanoidRootPart
-            local BG = Instance.new("BodyGyro", Root); BG.P=9e4; BG.maxTorque=Vector3.new(9e9,9e9,9e9); BG.cframe=Root.CFrame
-            local BV = Instance.new("BodyVelocity", Root); BV.velocity=Vector3.new(0,0,0); BV.maxForce=Vector3.new(9e9,9e9,9e9)
-            LocalPlayer.Character.Humanoid.PlatformStand = true
-            
-            while State.Fly do
-                RunService.RenderStepped:Wait()
-                local CF = Camera.CFrame
-                local Vel = Vector3.new(0,0,0)
-                if UserInputService.TouchEnabled then
-                    Vel = CF.LookVector * State.FlySpeed
-                else
-                    if UserInputService:IsKeyDown(Enum.KeyCode.W) then Vel = Vel + CF.LookVector end
-                    if UserInputService:IsKeyDown(Enum.KeyCode.S) then Vel = Vel - CF.LookVector end
-                end
-                BG.cframe = CF
-                BV.velocity = Vel * State.FlySpeed
-            end
-            BG:Destroy(); BV:Destroy()
-            LocalPlayer.Character.Humanoid.PlatformStand = false
+Move:CreateToggle("Fly", false, function(v)
+    getgenv().Fly = v
+    if v then
+        local Root = LocalPlayer.Character.HumanoidRootPart
+        local BV = Instance.new("BodyVelocity", Root)
+        BV.MaxForce = Vector3.new(1e9,1e9,1e9)
+        while getgenv().Fly do
+            BV.Velocity = Camera.CFrame.LookVector * 50
+            RunService.RenderStepped:Wait()
         end
-    end,
-})
+        BV:Destroy()
+    end
+end)
 
-MoveTab:CreateSlider({
-    Name = "Fly Speed",
-    Range = {10, 200},
-    Increment = 10,
-    CurrentValue = 20,
-    Callback = function(Value) State.FlySpeed = Value end,
-})
+-- [ SCRIPTS ]
+Scripts:CreateButton("Infinite Yield", function() loadstring(game:HttpGet('https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source'))() end)
+Scripts:CreateButton("Dark Dex V4", function() loadstring(game:HttpGet("https://raw.githubusercontent.com/Babyhamsta/RBLX_Scripts/main/Universal/BypassedDarkDexV3.lua"))() end)
 
-MoveTab:CreateSlider({
-    Name = "Walk Speed",
-    Range = {16, 200},
-    Increment = 1,
-    CurrentValue = 16,
-    Callback = function(Value) 
-        if LocalPlayer.Character then LocalPlayer.Character.Humanoid.WalkSpeed = Value end
-    end,
-})
-
--- [ TAB: SCRIPTS ]
-local ScriptTab = Window:CreateTab("Scripts", 4483362458) -- Script Icon
-
-ScriptTab:CreateButton({
-    Name = "Infinite Yield",
-    Callback = function()
-        loadstring(game:HttpGet('https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source'))()
-    end,
-})
-
-ScriptTab:CreateButton({
-    Name = "Dark Dex V4",
-    Callback = function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/Babyhamsta/RBLX_Scripts/main/Universal/BypassedDarkDexV3.lua"))()
-    end,
-})
-
-Rayfield:Notify({
-    Title = "Hyper Titan Loaded",
-    Content = "The Hub is ready. Enjoy.",
-    Duration = 5,
-    Image = 4483362458,
-})
+-- Success
+game.StarterGui:SetCore("SendNotification", {Title="Hyper Titan", Text="Custom Engine Loaded", Duration=5})
